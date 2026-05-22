@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Wesak AR</title>
+
+    <!-- Mind AR + A-Frame libraries -->
+    <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.2/dist/mindar-image-aframe.prod.js"></script>
+    <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
+  </head>
+
+  <body style="margin:0; overflow:hidden;">
+    <a-scene
+      mindar-image="imageTargetSrc: ./targets.mind; autoStart: true;"
+      color-space="sRGB"
+      renderer="colorManagement: true, physicallyCorrectLights"
+      vr-mode-ui="enabled: false"
+      device-orientation-permission-ui="enabled: false"
+    >
+
+      <!-- Load your 3D assets -->
+      <a-assets>
+        <a-asset-item id="lotus" src="./assets/lotus.glb"></a-asset-item>
+        <a-asset-item id="lantern" src="./assets/lantern.glb"></a-asset-item>
+      </a-assets>
+
+      <!-- Camera -->
+      <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
+
+      <!-- AR Target — everything inside appears on your marker -->
+      <a-entity mindar-image-target="targetIndex: 0">
+
+        <!-- Lotus Flower (center) -->
+        <a-gltf-model
+          src="#lotus"
+          position="0 0 0"
+          scale="0.1 0.1 0.1"
+          rotation="0 0 0"
+          animation="property: rotation; to: 0 360 0; loop: true; dur: 8000; easing: linear"
+        ></a-gltf-model>
+
+        <!-- Lantern (left) -->
+        <a-gltf-model
+          src="#lantern"
+          position="-0.3 0.2 0"
+          scale="0.08 0.08 0.08"
+          animation="property: position; to: -0.3 0.35 0; dir: alternate; loop: true; dur: 2000; easing: easeInOutSine"
+        ></a-gltf-model>
+
+        <!-- Lantern (right) -->
+        <a-gltf-model
+          src="#lantern"
+          position="0.3 0.2 0"
+          scale="0.08 0.08 0.08"
+          animation="property: position; to: 0.3 0.35 0; dir: alternate; loop: true; dur: 2500; easing: easeInOutSine"
+        ></a-gltf-model>
+
+        <!-- Floating petals (simple pink circles as placeholder) -->
+        <a-circle color="#ff69b4" radius="0.03" position="-0.1 0.3 0.1"
+          animation="property: position; to: -0.15 0.5 0.1; dir: alternate; loop: true; dur: 3000">
+        </a-circle>
+        <a-circle color="#ffb6c1" radius="0.02" position="0.1 0.25 0.05"
+          animation="property: position; to: 0.2 0.45 0.05; dir: alternate; loop: true; dur: 2500">
+        </a-circle>
+        <a-circle color="#ff69b4" radius="0.025" position="0 0.35 0.08"
+          animation="property: position; to: 0.1 0.55 0.08; dir: alternate; loop: true; dur: 3500">
+        </a-circle>
+
+        <!-- Glow light effect -->
+        <a-light type="point" color="#FFD700" intensity="1.5" position="0 0.3 0.2"></a-light>
+
+      </a-entity>
+
+    </a-scene>
+  </body>
+</html>
