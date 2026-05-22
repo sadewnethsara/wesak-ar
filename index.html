@@ -597,16 +597,10 @@
           video: { facingMode: 'environment' }
         });
 
-        // Stop test stream
+        // Stop test stream so Mind AR can claim the camera
         stream.getTracks().forEach(t => t.stop());
 
-        // Show loading
-        showLoading('Camera ready! Loading AR scene...');
-        setTimeout(() => showLoading('Loading Wesak models...'), 1000);
-        setTimeout(() => showLoading('Almost ready...'), 2000);
-
-        // Launch AR after short delay
-        setTimeout(() => launchAR(), 2500);
+        launchAR();
 
       } catch (err) {
         console.error('Camera error:', err);
@@ -649,7 +643,7 @@
     }
 
     function launchAR() {
-      // Hide all screens
+      document.getElementById('permission-screen').style.display = 'none';
       document.getElementById('loading-screen').style.display = 'none';
 
       // Show AR scene and UI
