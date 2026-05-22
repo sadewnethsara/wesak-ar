@@ -1,77 +1,700 @@
 <!DOCTYPE html>
-<html>
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Wesak AR</title>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <title>Wesak AR 2025 🌸</title>
 
-    <!-- Mind AR + A-Frame libraries -->
-    <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.2/dist/mindar-image-aframe.prod.js"></script>
-    <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
-  </head>
+  <!-- Mind AR + A-Frame -->
+  <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.2/dist/mindar-image-aframe.prod.js"></script>
+  <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
 
-  <body style="margin:0; overflow:hidden;">
-    <a-scene
-      mindar-image="imageTargetSrc: ./targets.mind; autoStart: true;"
-      color-space="sRGB"
-      renderer="colorManagement: true, physicallyCorrectLights"
-      vr-mode-ui="enabled: false"
-      device-orientation-permission-ui="enabled: false"
-    >
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Lato:wght@300;400&display=swap');
 
-      <!-- Load your 3D assets -->
-      <a-assets>
-        <a-asset-item id="lotus" src="./assets/lotus.glb"></a-asset-item>
-        <a-asset-item id="lantern" src="./assets/lantern.glb"></a-asset-item>
-      </a-assets>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
 
-      <!-- Camera -->
-      <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
+    :root {
+      --gold: #FFD700;
+      --orange: #FF8C00;
+      --pink: #FF69B4;
+      --saffron: #FF6B00;
+      --deep: #1a0a00;
+    }
 
-      <!-- AR Target — everything inside appears on your marker -->
-      <a-entity mindar-image-target="targetIndex: 0">
+    body {
+      font-family: 'Lato', sans-serif;
+      background: var(--deep);
+      overflow: hidden;
+      width: 100vw;
+      height: 100vh;
+    }
 
-        <!-- Lotus Flower (center) -->
-        <a-gltf-model
-          src="#lotus"
-          position="0 0 0"
-          scale="0.1 0.1 0.1"
-          rotation="0 0 0"
-          animation="property: rotation; to: 0 360 0; loop: true; dur: 8000; easing: linear"
-        ></a-gltf-model>
+    /* ─── PERMISSION SCREEN ─── */
+    #permission-screen {
+      position: fixed;
+      inset: 0;
+      background: linear-gradient(160deg, #1a0500 0%, #2d0e00 50%, #1a0a00 100%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+      padding: 30px;
+    }
 
-        <!-- Lantern (left) -->
-        <a-gltf-model
-          src="#lantern"
-          position="-0.3 0.2 0"
-          scale="0.08 0.08 0.08"
-          animation="property: position; to: -0.3 0.35 0; dir: alternate; loop: true; dur: 2000; easing: easeInOutSine"
-        ></a-gltf-model>
+    #permission-screen .mandala {
+      width: 160px;
+      height: 160px;
+      margin-bottom: 30px;
+      animation: spin 20s linear infinite;
+    }
 
-        <!-- Lantern (right) -->
-        <a-gltf-model
-          src="#lantern"
-          position="0.3 0.2 0"
-          scale="0.08 0.08 0.08"
-          animation="property: position; to: 0.3 0.35 0; dir: alternate; loop: true; dur: 2500; easing: easeInOutSine"
-        ></a-gltf-model>
+    @keyframes spin { to { transform: rotate(360deg); } }
 
-        <!-- Floating petals (simple pink circles as placeholder) -->
-        <a-circle color="#ff69b4" radius="0.03" position="-0.1 0.3 0.1"
-          animation="property: position; to: -0.15 0.5 0.1; dir: alternate; loop: true; dur: 3000">
-        </a-circle>
-        <a-circle color="#ffb6c1" radius="0.02" position="0.1 0.25 0.05"
-          animation="property: position; to: 0.2 0.45 0.05; dir: alternate; loop: true; dur: 2500">
-        </a-circle>
-        <a-circle color="#ff69b4" radius="0.025" position="0 0.35 0.08"
-          animation="property: position; to: 0.1 0.55 0.08; dir: alternate; loop: true; dur: 3500">
-        </a-circle>
+    #permission-screen h1 {
+      font-family: 'Cinzel', serif;
+      color: var(--gold);
+      font-size: 28px;
+      text-align: center;
+      letter-spacing: 3px;
+      margin-bottom: 8px;
+    }
 
-        <!-- Glow light effect -->
-        <a-light type="point" color="#FFD700" intensity="1.5" position="0 0.3 0.2"></a-light>
+    #permission-screen p {
+      color: #ffb86c;
+      font-size: 14px;
+      text-align: center;
+      margin-bottom: 40px;
+      opacity: 0.85;
+      line-height: 1.6;
+    }
 
+    .perm-btn {
+      background: linear-gradient(135deg, var(--saffron), var(--gold));
+      color: #1a0500;
+      border: none;
+      padding: 16px 48px;
+      border-radius: 50px;
+      font-family: 'Cinzel', serif;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      letter-spacing: 2px;
+      box-shadow: 0 0 30px rgba(255,165,0,0.5);
+      transition: all 0.3s ease;
+      margin-bottom: 16px;
+      width: 100%;
+      max-width: 300px;
+    }
+
+    .perm-btn:active {
+      transform: scale(0.96);
+      box-shadow: 0 0 15px rgba(255,165,0,0.3);
+    }
+
+    .perm-note {
+      color: #ff8c6b;
+      font-size: 12px;
+      text-align: center;
+      opacity: 0.7;
+      max-width: 280px;
+      line-height: 1.5;
+    }
+
+    .petals {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      pointer-events: none;
+      overflow: hidden;
+    }
+
+    .petal {
+      position: absolute;
+      top: -20px;
+      font-size: 20px;
+      animation: fall linear infinite;
+      opacity: 0.6;
+    }
+
+    @keyframes fall {
+      to { transform: translateY(110vh) rotate(360deg); opacity: 0; }
+    }
+
+    /* ─── LOADING SCREEN ─── */
+    #loading-screen {
+      position: fixed;
+      inset: 0;
+      background: linear-gradient(160deg, #1a0500, #2d0e00);
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 9998;
+    }
+
+    #loading-screen h2 {
+      font-family: 'Cinzel', serif;
+      color: var(--gold);
+      font-size: 20px;
+      letter-spacing: 2px;
+      margin-bottom: 20px;
+    }
+
+    .loader-ring {
+      width: 60px;
+      height: 60px;
+      border: 4px solid rgba(255,215,0,0.2);
+      border-top-color: var(--gold);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-bottom: 16px;
+    }
+
+    #loading-text {
+      color: #ffb86c;
+      font-size: 13px;
+      opacity: 0.8;
+    }
+
+    /* ─── ERROR SCREEN ─── */
+    #error-screen {
+      position: fixed;
+      inset: 0;
+      background: linear-gradient(160deg, #1a0500, #2d0e00);
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 9997;
+      padding: 30px;
+      text-align: center;
+    }
+
+    #error-screen h2 {
+      font-family: 'Cinzel', serif;
+      color: #ff4444;
+      font-size: 22px;
+      margin-bottom: 12px;
+    }
+
+    #error-message {
+      color: #ffb86c;
+      font-size: 14px;
+      margin-bottom: 30px;
+      line-height: 1.6;
+    }
+
+    /* ─── AR OVERLAY UI ─── */
+    #ar-ui {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 100;
+      display: none;
+    }
+
+    #ar-header {
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      padding: 16px 20px;
+      background: linear-gradient(to bottom, rgba(26,5,0,0.85), transparent);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    #ar-header h1 {
+      font-family: 'Cinzel', serif;
+      color: var(--gold);
+      font-size: 18px;
+      letter-spacing: 2px;
+    }
+
+    #ar-header span {
+      color: #ffb86c;
+      font-size: 12px;
+      opacity: 0.8;
+    }
+
+    #scan-hint {
+      position: absolute;
+      bottom: 100px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(26,5,0,0.75);
+      border: 1px solid rgba(255,215,0,0.3);
+      border-radius: 30px;
+      padding: 12px 24px;
+      color: var(--gold);
+      font-size: 13px;
+      letter-spacing: 1px;
+      text-align: center;
+      white-space: nowrap;
+      backdrop-filter: blur(6px);
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: translateX(-50%) scale(1); }
+      50% { opacity: 0.7; transform: translateX(-50%) scale(0.97); }
+    }
+
+    #scan-hint.found {
+      background: rgba(0,80,0,0.75);
+      border-color: rgba(100,255,100,0.4);
+      color: #90ff90;
+      animation: none;
+    }
+
+    #ar-footer {
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      padding: 16px 20px 30px;
+      background: linear-gradient(to top, rgba(26,5,0,0.85), transparent);
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+      pointer-events: all;
+    }
+
+    .ar-btn {
+      background: rgba(255,215,0,0.15);
+      border: 1px solid rgba(255,215,0,0.4);
+      color: var(--gold);
+      border-radius: 50px;
+      padding: 10px 22px;
+      font-size: 12px;
+      letter-spacing: 1px;
+      cursor: pointer;
+      backdrop-filter: blur(6px);
+      transition: all 0.2s;
+    }
+
+    .ar-btn:active { background: rgba(255,215,0,0.3); }
+
+    /* ─── SCANNER FRAME ─── */
+    #scanner-frame {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -55%);
+      width: 240px;
+      height: 240px;
+      pointer-events: none;
+    }
+
+    .corner {
+      position: absolute;
+      width: 30px;
+      height: 30px;
+      border-color: var(--gold);
+      border-style: solid;
+      opacity: 0.8;
+    }
+    .corner.tl { top: 0; left: 0; border-width: 3px 0 0 3px; }
+    .corner.tr { top: 0; right: 0; border-width: 3px 3px 0 0; }
+    .corner.bl { bottom: 0; left: 0; border-width: 0 0 3px 3px; }
+    .corner.br { bottom: 0; right: 0; border-width: 0 3px 3px 0; }
+
+    .scan-line {
+      position: absolute;
+      left: 10px; right: 10px;
+      height: 2px;
+      background: linear-gradient(to right, transparent, var(--gold), transparent);
+      top: 10px;
+      animation: scanMove 2.5s ease-in-out infinite;
+    }
+
+    @keyframes scanMove {
+      0% { top: 10px; opacity: 1; }
+      100% { top: 220px; opacity: 0.3; }
+    }
+
+    /* ─── A-FRAME SCENE ─── */
+    a-scene { display: none; }
+  </style>
+</head>
+
+<body>
+
+  <!-- Falling petals background -->
+  <div class="petals" id="petals"></div>
+
+  <!-- ═══ PERMISSION SCREEN ═══ -->
+  <div id="permission-screen">
+    <svg class="mandala" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="100" cy="100" r="90" fill="none" stroke="#FFD700" stroke-width="1" opacity="0.3"/>
+      <circle cx="100" cy="100" r="70" fill="none" stroke="#FF8C00" stroke-width="1" opacity="0.4"/>
+      <circle cx="100" cy="100" r="50" fill="none" stroke="#FFD700" stroke-width="1.5" opacity="0.5"/>
+      <circle cx="100" cy="100" r="30" fill="none" stroke="#FF8C00" stroke-width="2" opacity="0.6"/>
+      <!-- Lotus petals -->
+      <g transform="translate(100,100)">
+        <ellipse rx="12" ry="30" fill="#FFD700" opacity="0.6" transform="rotate(0) translate(0,-55)"/>
+        <ellipse rx="12" ry="30" fill="#FFD700" opacity="0.6" transform="rotate(45) translate(0,-55)"/>
+        <ellipse rx="12" ry="30" fill="#FFD700" opacity="0.6" transform="rotate(90) translate(0,-55)"/>
+        <ellipse rx="12" ry="30" fill="#FFD700" opacity="0.6" transform="rotate(135) translate(0,-55)"/>
+        <ellipse rx="12" ry="30" fill="#FFD700" opacity="0.6" transform="rotate(180) translate(0,-55)"/>
+        <ellipse rx="12" ry="30" fill="#FFD700" opacity="0.6" transform="rotate(225) translate(0,-55)"/>
+        <ellipse rx="12" ry="30" fill="#FFD700" opacity="0.6" transform="rotate(270) translate(0,-55)"/>
+        <ellipse rx="12" ry="30" fill="#FFD700" opacity="0.6" transform="rotate(315) translate(0,-55)"/>
+        <!-- Inner petals -->
+        <ellipse rx="8" ry="20" fill="#FF8C00" opacity="0.7" transform="rotate(22.5) translate(0,-35)"/>
+        <ellipse rx="8" ry="20" fill="#FF8C00" opacity="0.7" transform="rotate(67.5) translate(0,-35)"/>
+        <ellipse rx="8" ry="20" fill="#FF8C00" opacity="0.7" transform="rotate(112.5) translate(0,-35)"/>
+        <ellipse rx="8" ry="20" fill="#FF8C00" opacity="0.7" transform="rotate(157.5) translate(0,-35)"/>
+        <ellipse rx="8" ry="20" fill="#FF8C00" opacity="0.7" transform="rotate(202.5) translate(0,-35)"/>
+        <ellipse rx="8" ry="20" fill="#FF8C00" opacity="0.7" transform="rotate(247.5) translate(0,-35)"/>
+        <ellipse rx="8" ry="20" fill="#FF8C00" opacity="0.7" transform="rotate(292.5) translate(0,-35)"/>
+        <ellipse rx="8" ry="20" fill="#FF8C00" opacity="0.7" transform="rotate(337.5) translate(0,-35)"/>
+        <circle r="15" fill="#FFD700" opacity="0.9"/>
+        <circle r="8" fill="#FF8C00" opacity="1"/>
+      </g>
+    </svg>
+
+    <h1>WESAK AR 2025</h1>
+    <p>Experience the magic of Wesak through<br>Augmented Reality 🌸✨</p>
+
+    <button class="perm-btn" id="start-btn" onclick="requestCamera()">
+      🎥 Allow Camera & Start
+    </button>
+
+    <p class="perm-note">
+      Camera permission is required to view the AR experience.<br>
+      Your camera is only used for AR — nothing is recorded.
+    </p>
+  </div>
+
+  <!-- ═══ LOADING SCREEN ═══ -->
+  <div id="loading-screen">
+    <div class="loader-ring"></div>
+    <h2>Loading AR...</h2>
+    <p id="loading-text">Preparing Wesak experience...</p>
+  </div>
+
+  <!-- ═══ ERROR SCREEN ═══ -->
+  <div id="error-screen">
+    <h2>⚠️ Camera Error</h2>
+    <p id="error-message">Camera access was denied.</p>
+    <button class="perm-btn" onclick="retryCamera()">Try Again</button>
+    <p class="perm-note" style="margin-top:12px">
+      Go to browser Settings → Site Settings → Camera → Allow
+    </p>
+  </div>
+
+  <!-- ═══ AR UI OVERLAY ═══ -->
+  <div id="ar-ui">
+    <div id="ar-header">
+      <h1>🌸 WESAK AR</h1>
+      <span>2025</span>
+    </div>
+
+    <div id="scanner-frame">
+      <div class="corner tl"></div>
+      <div class="corner tr"></div>
+      <div class="corner bl"></div>
+      <div class="corner br"></div>
+      <div class="scan-line"></div>
+    </div>
+
+    <div id="scan-hint">📷 Point camera at Wesak marker</div>
+
+    <div id="ar-footer">
+      <button class="ar-btn" onclick="toggleEffects()">✨ Effects</button>
+      <button class="ar-btn" onclick="window.location.reload()">🔄 Restart</button>
+    </div>
+  </div>
+
+  <!-- ═══ A-FRAME AR SCENE ═══ -->
+  <a-scene id="ar-scene"
+    mindar-image="imageTargetSrc: ./targets.mind; autoStart: false; uiLoading: no; uiScanning: no; uiError: no;"
+    color-space="sRGB"
+    renderer="colorManagement: true; physicallyCorrectLights: true; antialias: true"
+    vr-mode-ui="enabled: false"
+    device-orientation-permission-ui="enabled: false"
+  >
+
+    <a-assets>
+      <!-- If you have GLB models, add them here -->
+      <!-- <a-asset-item id="lotus" src="./assets/lotus.glb"></a-asset-item> -->
+      <!-- <a-asset-item id="lantern" src="./assets/lantern.glb"></a-asset-item> -->
+    </a-assets>
+
+    <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
+
+    <!-- ═══ AR TARGET — All content appears on marker ═══ -->
+    <a-entity id="ar-target" mindar-image-target="targetIndex: 0">
+
+      <!-- ── GLOW BASE ── -->
+      <a-circle
+        color="#FFD700"
+        opacity="0.15"
+        radius="0.6"
+        position="0 0 0"
+        rotation="-90 0 0"
+        animation="property: opacity; from: 0.1; to: 0.3; dir: alternate; loop: true; dur: 2000"
+      ></a-circle>
+
+      <!-- ── LOTUS FLOWER (built with primitives) ── -->
+      <a-entity id="lotus-group" position="0 0.05 0">
+
+        <!-- Petals outer ring -->
+        <a-entity rotation="0 0 0">
+          <a-torus color="#FF69B4" radius="0.18" radius-tubular="0.04" rotation="90 0 0"
+            animation="property: rotation; from: 90 0 0; to: 90 360 0; loop: true; dur: 10000; easing: linear">
+          </a-torus>
+        </a-entity>
+
+        <!-- Petals - 8 pink petals -->
+        <a-cone color="#FF85C2" height="0.18" radius-bottom="0.06" radius-top="0.01" position="0 0 0.16" rotation="-90 0 0" opacity="0.9"></a-cone>
+        <a-cone color="#FF85C2" height="0.18" radius-bottom="0.06" radius-top="0.01" position="0.11 0 0.11" rotation="-90 0 45" opacity="0.9"></a-cone>
+        <a-cone color="#FF85C2" height="0.18" radius-bottom="0.06" radius-top="0.01" position="0.16 0 0" rotation="-90 0 90" opacity="0.9"></a-cone>
+        <a-cone color="#FF85C2" height="0.18" radius-bottom="0.06" radius-top="0.01" position="0.11 0 -0.11" rotation="-90 0 135" opacity="0.9"></a-cone>
+        <a-cone color="#FF85C2" height="0.18" radius-bottom="0.06" radius-top="0.01" position="0 0 -0.16" rotation="-90 0 180" opacity="0.9"></a-cone>
+        <a-cone color="#FFB6C1" height="0.18" radius-bottom="0.06" radius-top="0.01" position="-0.11 0 -0.11" rotation="-90 0 225" opacity="0.9"></a-cone>
+        <a-cone color="#FFB6C1" height="0.18" radius-bottom="0.06" radius-top="0.01" position="-0.16 0 0" rotation="-90 0 270" opacity="0.9"></a-cone>
+        <a-cone color="#FFB6C1" height="0.18" radius-bottom="0.06" radius-top="0.01" position="-0.11 0 0.11" rotation="-90 0 315" opacity="0.9"></a-cone>
+
+        <!-- Lotus center -->
+        <a-sphere color="#FFD700" radius="0.07" position="0 0.04 0"
+          animation="property: scale; from: 1 1 1; to: 1.1 1.1 1.1; dir: alternate; loop: true; dur: 1500">
+        </a-sphere>
+        <a-sphere color="#FF8C00" radius="0.04" position="0 0.07 0"></a-sphere>
+
+        <!-- Lotus spin animation -->
+        <a-animation attribute="rotation" from="0 0 0" to="0 360 0" dur="12000" repeat="indefinite" easing="linear"></a-animation>
       </a-entity>
 
-    </a-scene>
-  </body>
+      <!-- ── FLOATING LANTERNS ── -->
+
+      <!-- Lantern Left -->
+      <a-entity position="-0.4 0.25 0"
+        animation="property: position; from: -0.4 0.2 0; to: -0.4 0.35 0; dir: alternate; loop: true; dur: 2500; easing: easeInOutSine">
+        <a-cylinder color="#FF6B00" height="0.14" radius="0.06" opacity="0.9"></a-cylinder>
+        <a-cylinder color="#FFD700" height="0.03" radius="0.07" position="0 0.085 0"></a-cylinder>
+        <a-cylinder color="#FFD700" height="0.03" radius="0.07" position="0 -0.085 0"></a-cylinder>
+        <!-- Flame -->
+        <a-cone color="#FFD700" height="0.08" radius-bottom="0.02" radius-top="0.001" position="0 0.13 0"
+          animation="property: scale; from: 1 1 1; to: 0.8 1.2 0.8; dir: alternate; loop: true; dur: 300">
+        </a-cone>
+        <a-cone color="#FF8C00" height="0.05" radius-bottom="0.01" radius-top="0.001" position="0 0.15 0"
+          animation="property: scale; from: 1 1 1; to: 1.2 0.8 1.2; dir: alternate; loop: true; dur: 200">
+        </a-cone>
+        <!-- Glow -->
+        <a-sphere color="#FFD700" radius="0.12" opacity="0.15"
+          animation="property: opacity; from: 0.1; to: 0.25; dir: alternate; loop: true; dur: 500">
+        </a-sphere>
+      </a-entity>
+
+      <!-- Lantern Right -->
+      <a-entity position="0.4 0.2 0"
+        animation="property: position; from: 0.4 0.15 0; to: 0.4 0.3 0; dir: alternate; loop: true; dur: 3000; easing: easeInOutSine">
+        <a-cylinder color="#FF6B00" height="0.14" radius="0.06" opacity="0.9"></a-cylinder>
+        <a-cylinder color="#FFD700" height="0.03" radius="0.07" position="0 0.085 0"></a-cylinder>
+        <a-cylinder color="#FFD700" height="0.03" radius="0.07" position="0 -0.085 0"></a-cylinder>
+        <a-cone color="#FFD700" height="0.08" radius-bottom="0.02" radius-top="0.001" position="0 0.13 0"
+          animation="property: scale; from: 1 1 1; to: 0.8 1.2 0.8; dir: alternate; loop: true; dur: 400">
+        </a-cone>
+        <a-cone color="#FF8C00" height="0.05" radius-bottom="0.01" radius-top="0.001" position="0 0.15 0"
+          animation="property: scale; from: 1 1 1; to: 1.2 0.8 1.2; dir: alternate; loop: true; dur: 250">
+        </a-cone>
+        <a-sphere color="#FFD700" radius="0.12" opacity="0.15"
+          animation="property: opacity; from: 0.1; to: 0.25; dir: alternate; loop: true; dur: 600">
+        </a-sphere>
+      </a-entity>
+
+      <!-- Lantern Top (rising) -->
+      <a-entity position="0 0.5 0"
+        animation="property: position; from: 0 0.4 0; to: 0 0.65 0; dir: alternate; loop: true; dur: 3500; easing: easeInOutSine">
+        <a-cylinder color="#FF4500" height="0.10" radius="0.05"></a-cylinder>
+        <a-cylinder color="#FFD700" height="0.025" radius="0.06" position="0 0.06 0"></a-cylinder>
+        <a-cylinder color="#FFD700" height="0.025" radius="0.06" position="0 -0.06 0"></a-cylinder>
+        <a-cone color="#FFD700" height="0.07" radius-bottom="0.015" radius-top="0.001" position="0 0.11 0"
+          animation="property: scale; from: 1 1 1; to: 0.7 1.3 0.7; dir: alternate; loop: true; dur: 350">
+        </a-cone>
+        <a-sphere color="#FFD700" radius="0.1" opacity="0.15"
+          animation="property: opacity; from: 0.08; to: 0.22; dir: alternate; loop: true; dur: 450">
+        </a-sphere>
+      </a-entity>
+
+      <!-- ── FALLING PETALS ── -->
+      <a-entity id="petals-ar">
+        <a-circle color="#FF69B4" radius="0.025" position="-0.2 0.5 0.1"
+          animation="property: position; from: -0.2 0.5 0.1; to: -0.15 -0.2 0.1; dir: normal; loop: true; dur: 3000; easing: easeInQuad">
+        </a-circle>
+        <a-circle color="#FFB6C1" radius="0.018" position="0.15 0.55 0.05"
+          animation="property: position; from: 0.15 0.55 0.05; to: 0.2 -0.2 0.05; dir: normal; loop: true; dur: 3500; easing: easeInQuad">
+        </a-circle>
+        <a-circle color="#FF85C2" radius="0.022" position="0.3 0.45 0.08"
+          animation="property: position; from: 0.3 0.45 0.08; to: 0.1 -0.2 0.08; dir: normal; loop: true; dur: 2800; easing: easeInQuad">
+        </a-circle>
+        <a-circle color="#FFD700" radius="0.015" position="-0.1 0.6 0.06"
+          animation="property: position; from: -0.1 0.6 0.06; to: -0.25 -0.2 0.06; dir: normal; loop: true; dur: 4000; easing: easeInQuad">
+        </a-circle>
+        <a-circle color="#FF69B4" radius="0.02" position="0 0.5 0.12"
+          animation="property: position; from: 0 0.5 0.12; to: 0.15 -0.2 0.12; dir: normal; loop: true; dur: 3200; easing: easeInQuad">
+        </a-circle>
+      </a-entity>
+
+      <!-- ── DHARMA WHEEL ── -->
+      <a-entity position="0 0.45 0"
+        animation="property: rotation; from: 0 0 0; to: 0 360 0; loop: true; dur: 6000; easing: linear">
+        <a-torus color="#FFD700" radius="0.12" radius-tubular="0.008" rotation="90 0 0" opacity="0.8"></a-torus>
+        <!-- Spokes -->
+        <a-box color="#FFD700" width="0.24" height="0.008" depth="0.008" rotation="90 0 0" opacity="0.8"></a-box>
+        <a-box color="#FFD700" width="0.24" height="0.008" depth="0.008" rotation="90 60 0" opacity="0.8"></a-box>
+        <a-box color="#FFD700" width="0.24" height="0.008" depth="0.008" rotation="90 120 0" opacity="0.8"></a-box>
+        <a-sphere color="#FFD700" radius="0.025"></a-sphere>
+      </a-entity>
+
+      <!-- ── WESAK TEXT ── -->
+      <a-text
+        value="Wesak 2025"
+        color="#FFD700"
+        align="center"
+        width="1.2"
+        position="0 -0.3 0.05"
+        rotation="0 0 0"
+        font="https://cdn.aframe.io/fonts/Exo2Bold.fnt"
+        animation="property: position; from: 0 -0.3 0.05; to: 0 -0.28 0.05; dir: alternate; loop: true; dur: 2000"
+      ></a-text>
+
+      <!-- ── POINT LIGHTS ── -->
+      <a-light type="point" color="#FFD700" intensity="1.2" position="0 0.3 0.2" distance="1.5"></a-light>
+      <a-light type="point" color="#FF8C00" intensity="0.8" position="-0.4 0.3 0" distance="1"></a-light>
+      <a-light type="point" color="#FF4500" intensity="0.8" position="0.4 0.3 0" distance="1"></a-light>
+
+    </a-entity>
+  </a-scene>
+
+  <script>
+    // ─── FALLING PETALS BACKGROUND ───
+    const petalsContainer = document.getElementById('petals');
+    const petalEmojis = ['🌸', '🌺', '✨', '🪷'];
+    for (let i = 0; i < 15; i++) {
+      const p = document.createElement('div');
+      p.className = 'petal';
+      p.textContent = petalEmojis[Math.floor(Math.random() * petalEmojis.length)];
+      p.style.left = Math.random() * 100 + 'vw';
+      p.style.animationDuration = (Math.random() * 5 + 4) + 's';
+      p.style.animationDelay = (Math.random() * 6) + 's';
+      p.style.fontSize = (Math.random() * 16 + 12) + 'px';
+      petalsContainer.appendChild(p);
+    }
+
+    // ─── CAMERA PERMISSION ───
+    async function requestCamera() {
+      const btn = document.getElementById('start-btn');
+      btn.textContent = '⏳ Requesting...';
+      btn.disabled = true;
+
+      try {
+        // Test camera access first
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: 'environment' }
+        });
+
+        // Stop test stream
+        stream.getTracks().forEach(t => t.stop());
+
+        // Show loading
+        showLoading('Camera ready! Loading AR scene...');
+        setTimeout(() => showLoading('Loading Wesak models...'), 1000);
+        setTimeout(() => showLoading('Almost ready...'), 2000);
+
+        // Launch AR after short delay
+        setTimeout(() => launchAR(), 2500);
+
+      } catch (err) {
+        console.error('Camera error:', err);
+        showError(err);
+      }
+    }
+
+    function showLoading(msg) {
+      document.getElementById('permission-screen').style.display = 'none';
+      const ls = document.getElementById('loading-screen');
+      ls.style.display = 'flex';
+      document.getElementById('loading-text').textContent = msg;
+    }
+
+    function showError(err) {
+      document.getElementById('permission-screen').style.display = 'none';
+      document.getElementById('loading-screen').style.display = 'none';
+      const es = document.getElementById('error-screen');
+      es.style.display = 'flex';
+
+      let msg = 'Camera access was denied.';
+      if (err.name === 'NotAllowedError') {
+        msg = '🚫 Camera permission denied.\n\nPlease allow camera access in your browser settings and try again.';
+      } else if (err.name === 'NotFoundError') {
+        msg = '📷 No camera found on this device.';
+      } else if (err.name === 'NotSupportedError') {
+        msg = '⚠️ Camera not supported. Please use Chrome or Safari with HTTPS.';
+      } else if (location.protocol !== 'https:' && location.hostname !== 'localhost') {
+        msg = '🔒 HTTPS is required for camera access.\n\nPlease host this on GitHub Pages or Netlify.';
+      }
+      document.getElementById('error-message').textContent = msg;
+    }
+
+    function retryCamera() {
+      document.getElementById('error-screen').style.display = 'none';
+      document.getElementById('permission-screen').style.display = 'flex';
+      const btn = document.getElementById('start-btn');
+      btn.textContent = '🎥 Allow Camera & Start';
+      btn.disabled = false;
+    }
+
+    function launchAR() {
+      // Hide all screens
+      document.getElementById('loading-screen').style.display = 'none';
+
+      // Show AR scene and UI
+      const scene = document.getElementById('ar-scene');
+      scene.style.display = 'block';
+      document.getElementById('ar-ui').style.display = 'block';
+
+      // Start Mind AR
+      scene.components['mindar-image'].startAR();
+
+      // Listen for marker found/lost
+      scene.addEventListener('targetFound', () => {
+        const hint = document.getElementById('scan-hint');
+        hint.textContent = '✅ Wesak AR found! 🌸';
+        hint.classList.add('found');
+        document.getElementById('scanner-frame').style.display = 'none';
+      });
+
+      scene.addEventListener('targetLost', () => {
+        const hint = document.getElementById('scan-hint');
+        hint.textContent = '📷 Point camera at Wesak marker';
+        hint.classList.remove('found');
+        document.getElementById('scanner-frame').style.display = 'block';
+      });
+    }
+
+    // ─── TOGGLE EFFECTS ───
+    let effectsOn = true;
+    function toggleEffects() {
+      effectsOn = !effectsOn;
+      const petalsAR = document.getElementById('petals-ar');
+      if (petalsAR) {
+        petalsAR.setAttribute('visible', effectsOn);
+      }
+    }
+
+    // ─── HTTPS CHECK ───
+    window.addEventListener('load', () => {
+      if (location.protocol !== 'https:' && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
+        const note = document.querySelector('.perm-note');
+        note.innerHTML = '⚠️ <strong>Use HTTPS</strong> for camera to work.<br>Deploy to GitHub Pages or Netlify first!';
+        note.style.color = '#ff8844';
+      }
+    });
+  </script>
+
+</body>
 </html>
