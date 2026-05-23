@@ -2,153 +2,255 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <title>Wesak Festival Invitation 2026</title>
 
-  <title>Wesak AR Ground Placement</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=Cinzel:wght@400;600;700&display=swap" rel="stylesheet">
 
-  <!-- A-Frame FIRST -->
   <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
-
-  <!-- MindAR -->
   <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.2/dist/mindar-image-aframe.prod.js"></script>
 
   <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
     body {
       margin: 0;
       overflow: hidden;
-      font-family: Arial, sans-serif;
-      background: black;
+      font-family: 'Cormorant Garamond', serif;
+      background: #07090f;
     }
 
-    .ui {
+    /* ── Invitation background (behind AR) ── */
+    .bg-particles {
       position: fixed;
-      top: 20px;
-      left: 50%;
-      transform: translateX(-50%);
-      z-index: 999;
-      background: rgba(0,0,0,0.6);
-      color: white;
-      padding: 12px 20px;
-      border-radius: 30px;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      overflow: hidden;
+    }
+    .particle {
+      position: absolute;
+      border-radius: 50%;
+      opacity: 0;
+      animation: drift var(--dur) ease-in-out infinite var(--delay);
+    }
+    @keyframes drift {
+      0%   { opacity: 0; transform: translateY(0) scale(0.5) rotate(0deg); }
+      20%  { opacity: 0.8; }
+      80%  { opacity: 0.2; }
+      100% { opacity: 0; transform: translateY(-110vh) scale(1.5) rotate(180deg); }
+    }
+    .lantern {
+      position: fixed;
+      pointer-events: none;
+      animation: float-lantern var(--dur2) ease-in-out infinite var(--delay2);
+      opacity: 0;
+      z-index: 0;
+    }
+    @keyframes float-lantern {
+      0%   { opacity: 0; transform: translateY(100vh) translateX(0); }
+      10%  { opacity: 0.6; }
+      90%  { opacity: 0.2; }
+      100% { opacity: 0; transform: translateY(-20vh) translateX(var(--drift)); }
+    }
+
+    /* ── Permission / UI ── */
+    #permission-screen {
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+      background: radial-gradient(ellipse at 50% 30%, #0d1a2e 0%, #060c18 50%, #04080f 100%);
+    }
+    #permission-screen h1 {
+      font-family: 'Cinzel', serif;
+      font-size: clamp(22px, 6vw, 32px);
+      color: #e8f4ff;
+      letter-spacing: 4px;
+      text-align: center;
+      margin-bottom: 0.5rem;
+      text-shadow: 0 0 40px rgba(100,170,255,0.4);
+    }
+    #permission-screen p {
+      color: #7eb8ff;
+      font-size: 15px;
+      text-align: center;
+      margin-bottom: 2rem;
+      line-height: 1.6;
+      opacity: 0.9;
+    }
+    .start-btn {
+      font-family: 'Cinzel', serif;
+      font-size: 13px;
+      letter-spacing: 3px;
+      padding: 14px 36px;
+      border: 1px solid #1e3a6e;
+      border-radius: 50px;
+      background: linear-gradient(135deg, #0d1a2e, #1a3060);
+      color: #c9a84c;
+      cursor: pointer;
+      box-shadow: 0 0 30px rgba(100,170,255,0.15);
+    }
+    .start-btn:disabled { opacity: 0.6; cursor: wait; }
+
+    .ar-ui {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 100;
+      pointer-events: none;
+      display: none;
+      padding: 16px 20px;
+      background: linear-gradient(to bottom, rgba(7,9,15,0.85), transparent);
+    }
+    .ar-ui h2 {
+      font-family: 'Cinzel', serif;
       font-size: 14px;
+      letter-spacing: 4px;
+      color: #c9a84c;
+      text-align: center;
+    }
+    .ar-ui p {
+      font-size: 12px;
+      color: #7eb8ff;
+      text-align: center;
+      margin-top: 4px;
       letter-spacing: 1px;
     }
+    .ar-ui.found p { color: #a8d0ff; }
+
+    a-scene { display: none; }
   </style>
 </head>
-
 <body>
 
-<div class="ui">
-  📷 Scan the ground marker
-</div>
+  <div class="bg-particles" id="particles"></div>
 
-<a-scene
-  mindar-image="imageTargetSrc: ./targets.mind; autoStart: true;"
-  color-space="sRGB"
-  renderer="colorManagement: true; physicallyCorrectLights: true"
-  vr-mode-ui="enabled: false"
-  device-orientation-permission-ui="enabled: false"
->
+  <div id="permission-screen">
+    <h1>WESAK INVITATION</h1>
+    <p>Point your camera at the marker to reveal<br>the festival invitation in AR</p>
+    <button class="start-btn" id="start-btn" type="button">Allow Camera &amp; Start</button>
+  </div>
 
-  <!-- ASSETS -->
-  <a-assets>
+  <div class="ar-ui" id="ar-ui">
+    <h2>✦ Wesak Festival 2026 ✦</h2>
+    <p id="scan-hint">Scan the marker to view the invitation</p>
+  </div>
 
-    <!-- Your lotus model -->
-    <a-asset-item id="lotusModel" src="./assets/lotus.glb"></a-asset-item>
+  <a-scene
+    id="ar-scene"
+    mindar-image="imageTargetSrc: ./targets.mind; autoStart: false; uiLoading: no; uiScanning: no; uiError: no;"
+    color-space="sRGB"
+    renderer="colorManagement: true; physicallyCorrectLights: true; antialias: true"
+    vr-mode-ui="enabled: false"
+    device-orientation-permission-ui="enabled: false"
+  >
+    <a-assets>
+      <a-asset-item id="invitation" src="./assets/invitation.glb"></a-asset-item>
+    </a-assets>
 
-    <!-- Your lantern model -->
-    <a-asset-item id="lanternModel" src="./assets/lantern.glb"></a-asset-item>
+    <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
-  </a-assets>
+    <a-entity mindar-image-target="targetIndex: 0">
 
-  <!-- CAMERA -->
-  <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
+      <!-- Invitation: 10 cm above marker, tilted 30° toward viewer -->
+      <a-gltf-model
+        id="invitation-model"
+        src="#invitation"
+        position="0 0.1 0"
+        rotation="-30 0 0"
+        scale="1 1 1"
+      ></a-gltf-model>
 
-  <!-- TARGET -->
-  <a-entity mindar-image-target="targetIndex: 0">
+      <a-light type="ambient" color="#a8d0ff" intensity="0.5"></a-light>
+      <a-light type="point" color="#c9a84c" intensity="1.2" distance="3" position="0 0.3 0.4"></a-light>
+      <a-light type="point" color="#7eb8ff" intensity="0.8" distance="2" position="-0.3 0.2 0.2"></a-light>
 
-    <!-- GROUND BASE -->
-    <a-circle
-      rotation="-90 0 0"
-      radius="1"
-      color="#222222"
-      opacity="0.3"
-    ></a-circle>
+    </a-entity>
+  </a-scene>
 
-    <!-- LOTUS MODEL ON GROUND -->
-    <a-gltf-model
-      src="#lotusModel"
-      position="0 0 0"
-      rotation="0 0 0"
-      scale="1 1 1"
-    ></a-gltf-model>
+  <script>
+    // Background particles & lanterns (from invitation design)
+    const container = document.getElementById('particles');
+    for (let i = 0; i < 55; i++) {
+      const p = document.createElement('div');
+      p.className = 'particle';
+      const isGold = Math.random() > 0.6;
+      p.style.setProperty('--dur', (7 + Math.random() * 12) + 's');
+      p.style.setProperty('--delay', -(Math.random() * 20) + 's');
+      p.style.left = (Math.random() * 100) + '%';
+      p.style.bottom = (Math.random() * 30) + '%';
+      const size = 1 + Math.random() * 3;
+      p.style.width = p.style.height = size + 'px';
+      p.style.background = isGold ? '#c9a84c' : '#5a90d0';
+      p.style.boxShadow = isGold ? '0 0 4px #c9a84c' : '0 0 4px #7eb8ff';
+      container.appendChild(p);
+    }
+    for (let i = 0; i < 8; i++) {
+      const l = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      l.setAttribute('viewBox', '0 0 20 28');
+      l.setAttribute('width', '20');
+      l.setAttribute('height', '28');
+      l.className.baseVal = 'lantern';
+      l.style.setProperty('--dur2', (14 + Math.random() * 12) + 's');
+      l.style.setProperty('--delay2', -(Math.random() * 24) + 's');
+      l.style.setProperty('--drift', (-40 + Math.random() * 80) + 'px');
+      l.style.left = (5 + Math.random() * 90) + '%';
+      l.style.bottom = '-60px';
+      const col = Math.random() > 0.5 ? '#c9a84c' : '#5a90d0';
+      l.innerHTML = `
+        <ellipse cx="10" cy="13" rx="7" ry="10" fill="${col}" opacity="0.25"/>
+        <ellipse cx="10" cy="13" rx="5" ry="8" fill="${col}" opacity="0.2"/>
+        <line x1="10" y1="3" x2="10" y2="0" stroke="${col}" stroke-width="1" opacity="0.5"/>
+        <line x1="10" y1="23" x2="10" y2="27" stroke="${col}" stroke-width="1" opacity="0.4"/>
+        <ellipse cx="10" cy="13" rx="3" ry="2" fill="${col}" opacity="0.4"/>
+      `;
+      container.appendChild(l);
+    }
 
-    <!-- FLOATING LANTERNS -->
-    <!-- 1.8 = around 6 feet -->
+    const scene = document.getElementById('ar-scene');
+    const startBtn = document.getElementById('start-btn');
+    const arUi = document.getElementById('ar-ui');
+    const scanHint = document.getElementById('scan-hint');
 
-    <a-gltf-model
-      src="#lanternModel"
-      position="0 1.8 0"
-      scale="0.2 0.2 0.2"
-      animation="
-        property: position;
-        from: 0 1.7 0;
-        to: 0 1.9 0;
-        dir: alternate;
-        loop: true;
-        dur: 2500;
-      "
-    ></a-gltf-model>
+    startBtn.addEventListener('click', async () => {
+      startBtn.disabled = true;
+      startBtn.textContent = 'Starting…';
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: 'environment' }
+        });
+        stream.getTracks().forEach(t => t.stop());
+        launchAR();
+      } catch (err) {
+        console.error(err);
+        startBtn.disabled = false;
+        startBtn.textContent = 'Allow Camera & Start';
+        alert('Camera access is required. Please allow camera and try again.');
+      }
+    });
 
-    <!-- EXTRA LANTERNS -->
+    function launchAR() {
+      document.getElementById('permission-screen').style.display = 'none';
+      scene.style.display = 'block';
+      arUi.style.display = 'block';
+      scene.components['mindar-image'].startAR();
 
-    <a-gltf-model
-      src="#lanternModel"
-      position="-0.8 1.7 0"
-      scale="0.15 0.15 0.15"
-      animation="
-        property: position;
-        from: -0.8 1.6 0;
-        to: -0.8 1.8 0;
-        dir: alternate;
-        loop: true;
-        dur: 3000;
-      "
-    ></a-gltf-model>
-
-    <a-gltf-model
-      src="#lanternModel"
-      position="0.8 1.9 0"
-      scale="0.15 0.15 0.15"
-      animation="
-        property: position;
-        from: 0.8 1.8 0;
-        to: 0.8 2 0;
-        dir: alternate;
-        loop: true;
-        dur: 2800;
-      "
-    ></a-gltf-model>
-
-    <!-- LIGHTS -->
-
-    <a-light
-      type="point"
-      color="#FFD700"
-      intensity="2"
-      distance="10"
-      position="0 2 1"
-    ></a-light>
-
-    <a-light
-      type="ambient"
-      color="#ffffff"
-      intensity="0.6"
-    ></a-light>
-
-  </a-entity>
-
-</a-scene>
-
+      scene.addEventListener('targetFound', () => {
+        arUi.classList.add('found');
+        scanHint.textContent = 'Invitation revealed — Wesak Festival 2026';
+      });
+      scene.addEventListener('targetLost', () => {
+        arUi.classList.remove('found');
+        scanHint.textContent = 'Scan the marker to view the invitation';
+      });
+    }
+  </script>
 </body>
 </html>
