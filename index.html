@@ -10,6 +10,97 @@
 
   <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.2/dist/mindar-image-aframe.prod.js"></script>
+  <script>
+    // Extra smoothing on top of Mind AR filters (child of jittery target)
+    AFRAME.registerComponent('tracking-smooth', {
+      schema: {
+        smoothness: { type: 'number', default: 0.12 },
+      },
+      init() {
+        this.smoothWorldPos = new THREE.Vector3();
+        this.smoothWorldQuat = new THREE.Quaternion();
+        this._tmpPos = new THREE.Vector3();
+        this._tmpQuat = new THREE.Quaternion();
+        this._parentInv = new THREE.Matrix4();
+        this._worldMatrix = new THREE.Matrix4();
+        this.initialized = false;
+      },
+      tick(_t, dt) {
+        const parentObj = this.el.parentEl && this.el.parentEl.object3D;
+        if (!parentObj) return;
+
+        parentObj.getWorldPosition(this._tmpPos);
+        parentObj.getWorldQuaternion(this._tmpQuat);
+
+        if (!this.initialized) {
+          this.smoothWorldPos.copy(this._tmpPos);
+          this.smoothWorldQuat.copy(this._tmpQuat);
+          this.initialized = true;
+        } else {
+          const frameDt = Math.min(dt || 16, 50);
+          const alpha = 1 - Math.pow(1 - this.data.smoothness, frameDt / 16);
+          this.smoothWorldPos.lerp(this._tmpPos, alpha);
+          this.smoothWorldQuat.slerp(this._tmpQuat, alpha);
+        }
+
+        this._parentInv.copy(parentObj.matrixWorld).invert();
+        this._worldMatrix.compose(
+          this.smoothWorldPos,
+          this.smoothWorldQuat,
+          new THREE.Vector3(1, 1, 1)
+        );
+        this._worldMatrix.premultiply(this._parentInv);
+        this.el.object3D.position.setFromMatrixPosition(this._worldMatrix);
+        this.el.object3D.quaternion.setFromRotationMatrix(this._worldMatrix);
+      },
+    });
+
+    AFRAME.registerComponent('invitation-flip', {
+      schema: {
+        angle: { type: 'number', default: 180 },
+        duration: { type: 'number', default: 700 },
+      },
+      init() {
+        this.flipped = false;
+        this.animating = false;
+        this.currentY = 0;
+        this._raf = null;
+      },
+      toggle() {
+        if (this.animating) return;
+        this.flipped = !this.flipped;
+        this.animateTo(this.flipped ? this.data.angle : 0);
+      },
+      reset() {
+        if (this._raf) cancelAnimationFrame(this._raf);
+        this.animating = false;
+        this.flipped = false;
+        this.currentY = 0;
+        this.el.object3D.rotation.y = 0;
+      },
+      animateTo(targetY) {
+        this.animating = true;
+        const startY = this.currentY;
+        const startTime = performance.now();
+        const dur = this.data.duration;
+        const ease = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
+
+        const step = (now) => {
+          const t = Math.min(1, (now - startTime) / dur);
+          const y = startY + (targetY - startY) * ease(t);
+          this.el.object3D.rotation.y = THREE.MathUtils.degToRad(y);
+          this.currentY = y;
+          if (t < 1) {
+            this._raf = requestAnimationFrame(step);
+          } else {
+            this.animating = false;
+            this._raf = null;
+          }
+        };
+        this._raf = requestAnimationFrame(step);
+      },
+    });
+  </script>
 
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -125,6 +216,38 @@
     }
     .ar-ui.found p { color: #a8d0ff; }
 
+    .ar-footer {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      z-index: 100;
+      display: none;
+      justify-content: center;
+      gap: 12px;
+      padding: 16px 20px 28px;
+      pointer-events: none;
+      background: linear-gradient(to top, rgba(7,9,15,0.9), transparent);
+    }
+    .ar-footer.visible { display: flex; }
+    .ar-action-btn {
+      pointer-events: all;
+      font-family: 'Cinzel', serif;
+      font-size: 11px;
+      letter-spacing: 2px;
+      padding: 12px 22px;
+      border: 1px solid rgba(201,168,76,0.45);
+      border-radius: 50px;
+      background: rgba(13,26,46,0.85);
+      color: #c9a84c;
+      cursor: pointer;
+      backdrop-filter: blur(8px);
+      box-shadow: 0 0 20px rgba(100,170,255,0.12);
+      transition: background 0.2s, transform 0.15s;
+    }
+    .ar-action-btn:active { transform: scale(0.97); background: rgba(26,48,96,0.95); }
+    .ar-action-btn:disabled { opacity: 0.45; cursor: wait; }
+
     /* Scene must stay in layout (not display:none) or Mind AR video never starts */
     a-scene {
       position: fixed;
@@ -176,10 +299,14 @@
     <p id="scan-hint">Scan the marker to view the invitation</p>
   </div>
 
+  <div class="ar-footer" id="ar-footer">
+    <button class="ar-action-btn" id="flip-btn" type="button" disabled>View Details</button>
+  </div>
+
   <a-scene
     id="ar-scene"
     class="ar-waiting"
-    mindar-image="imageTargetSrc: ./targets.mind; autoStart: false; uiLoading: no; uiScanning: no; uiError: no;"
+    mindar-image="imageTargetSrc: ./targets.mind; autoStart: false; uiLoading: no; uiScanning: no; uiError: no; filterMinCF: 0.0001; filterBeta: 0.001; warmupTolerance: 8; missTolerance: 12;"
     color-space="sRGB"
     renderer="colorManagement: true; physicallyCorrectLights: true; antialias: true"
     vr-mode-ui="enabled: false"
@@ -193,15 +320,24 @@
 
     <a-entity mindar-image-target="targetIndex: 0">
 
-      <!-- Position / rotation / scale applied from INVITATION_CONFIG below -->
-      <a-gltf-model
-        id="invitation-model"
-        src="#invitation"
-      ></a-gltf-model>
+      <!-- Smooth wrapper reduces shake from tracking noise -->
+      <a-entity id="invitation-anchor" tracking-smooth="smoothness: 0.12">
 
-      <a-light type="ambient" color="#a8d0ff" intensity="0.5"></a-light>
-      <a-light type="point" color="#c9a84c" intensity="1.2" distance="3" position="0 0.3 0.4"></a-light>
-      <a-light type="point" color="#7eb8ff" intensity="0.8" distance="2" position="-0.3 0.2 0.2"></a-light>
+        <!-- Horizontal flip pivot (Y-axis) -->
+        <a-entity id="invitation-pivot" invitation-flip="angle: 18; duration: 700">
+
+          <a-gltf-model
+            id="invitation-model"
+            src="#invitation"
+          ></a-gltf-model>
+
+          <a-light type="ambient" color="#a8d0ff" intensity="0.5"></a-light>
+          <a-light type="point" color="#c9a84c" intensity="1.2" distance="3" position="0 0.3 0.4"></a-light>
+          <a-light type="point" color="#7eb8ff" intensity="0.8" distance="2" position="-0.3 0.2 0.2"></a-light>
+
+        </a-entity>
+
+      </a-entity>
 
     </a-entity>
   </a-scene>
@@ -219,21 +355,51 @@
     //  rotation.z  → roll (rarely needed)
     //
     //  scale       → size (ZOOM). Smaller = zoom OUT
-    //                try 0.3–0.5 if too big, 1.5–2 if too small
+    //
+    //  STABILIZATION (if still shaky / too laggy):
+    //  smoothness  → 0.08 = very stable, 0.2 = more responsive
+    //
+    //  flipAngle   → horizontal Y rotation for "View Details" (use 180 for full back)
     //
     const INVITATION_CONFIG = {
       position: { x: 0, y: 0.5, z: 0 },
       rotation: { x: 10, y: 0, z: -0.5 },
       scale:    { x: 0.5, y: 0.5, z: 0.5 },
+      smoothness: 0.12,
+      flipAngle: 18,
+      flipDuration: 700,
     };
 
     function applyInvitationTransform() {
       const model = document.getElementById('invitation-model');
+      const anchor = document.getElementById('invitation-anchor');
+      const pivot = document.getElementById('invitation-pivot');
       if (!model) return;
-      const { position: p, rotation: r, scale: s } = INVITATION_CONFIG;
+      const { position: p, rotation: r, scale: s, smoothness, flipAngle, flipDuration } = INVITATION_CONFIG;
       model.setAttribute('position', `${p.x} ${p.y} ${p.z}`);
       model.setAttribute('rotation', `${r.x} ${r.y} ${r.z}`);
       model.setAttribute('scale', `${s.x} ${s.y} ${s.z}`);
+      if (anchor && smoothness != null) {
+        anchor.setAttribute('tracking-smooth', { smoothness });
+      }
+      if (pivot) {
+        pivot.setAttribute('invitation-flip', {
+          angle: flipAngle ?? 18,
+          duration: flipDuration ?? 700,
+        });
+      }
+    }
+
+    function getFlipComponent() {
+      const pivot = document.getElementById('invitation-pivot');
+      return pivot?.components?.['invitation-flip'] || null;
+    }
+
+    function updateFlipButton() {
+      const flipBtn = document.getElementById('flip-btn');
+      const flip = getFlipComponent();
+      if (!flipBtn || !flip) return;
+      flipBtn.textContent = flip.flipped ? 'View Front' : 'View Details';
     }
 
     // Background particles & lanterns (from invitation design)
@@ -278,6 +444,8 @@
     const startBtn = document.getElementById('start-btn');
     const retryBtn = document.getElementById('retry-btn');
     const arUi = document.getElementById('ar-ui');
+    const arFooter = document.getElementById('ar-footer');
+    const flipBtn = document.getElementById('flip-btn');
     const scanHint = document.getElementById('scan-hint');
     const permissionScreen = document.getElementById('permission-screen');
     const errorScreen = document.getElementById('error-screen');
@@ -306,6 +474,7 @@
       permissionScreen.style.display = 'none';
       errorScreen.classList.add('visible');
       arUi.style.display = 'none';
+      arFooter.classList.remove('visible');
       scene.classList.remove('ar-active');
       scene.classList.add('ar-waiting');
 
@@ -328,6 +497,7 @@
       errorScreen.classList.remove('visible');
       permissionScreen.style.display = 'flex';
       arUi.style.display = 'none';
+      arFooter.classList.remove('visible');
       scene.classList.remove('ar-active');
       scene.classList.add('ar-waiting');
       arStarted = false;
@@ -352,6 +522,7 @@
       scene.classList.remove('ar-waiting');
       scene.classList.add('ar-active');
       arUi.style.display = 'block';
+      arFooter.classList.add('visible');
 
       // Let the scene paint before Mind AR opens the camera
       await waitNextFrame();
@@ -375,13 +546,33 @@
 
     retryBtn.addEventListener('click', resetToPermission);
 
+    flipBtn.addEventListener('click', () => {
+      const flip = getFlipComponent();
+      if (!flip || flipBtn.disabled) return;
+      flip.toggle();
+      setTimeout(updateFlipButton, flip.data.duration + 50);
+      updateFlipButton();
+    });
+
     scene.addEventListener('targetFound', () => {
       arUi.classList.add('found');
-      scanHint.textContent = 'Invitation revealed — Wesak Festival 2026';
+      scanHint.textContent = 'Invitation revealed — tap View Details to flip';
+      flipBtn.disabled = false;
+      const anchor = document.getElementById('invitation-anchor');
+      if (anchor?.components['tracking-smooth']) {
+        anchor.components['tracking-smooth'].initialized = false;
+      }
     });
     scene.addEventListener('targetLost', () => {
       arUi.classList.remove('found');
       scanHint.textContent = 'Scan the marker to view the invitation';
+      flipBtn.disabled = true;
+      getFlipComponent()?.reset();
+      updateFlipButton();
+      const anchor = document.getElementById('invitation-anchor');
+      if (anchor?.components['tracking-smooth']) {
+        anchor.components['tracking-smooth'].initialized = false;
+      }
     });
 
     if (location.protocol !== 'https:' && !['localhost', '127.0.0.1'].includes(location.hostname)) {
