@@ -193,13 +193,10 @@
 
     <a-entity mindar-image-target="targetIndex: 0">
 
-      <!-- Invitation: 10 cm above marker, tilted 30° toward viewer -->
+      <!-- Position / rotation / scale applied from INVITATION_CONFIG below -->
       <a-gltf-model
         id="invitation-model"
         src="#invitation"
-        position="0 0.1 0"
-        rotation="-30 0 0"
-        scale="1 1 1"
       ></a-gltf-model>
 
       <a-light type="ambient" color="#a8d0ff" intensity="0.5"></a-light>
@@ -210,6 +207,35 @@
   </a-scene>
 
   <script>
+    // ═══════════════════════════════════════════════════════════
+    //  INVITATION AR — edit these to zoom & change angle
+    // ═══════════════════════════════════════════════════════════
+    //
+    //  position.y  → height above marker (metres). 0.1 = 10 cm
+    //  position.z  → forward/back from marker (+ = toward camera)
+    //
+    //  rotation.x  → tilt up/down (negative = lean toward you)
+    //  rotation.y  → spin left/right (e.g. 45 = turned sideways)
+    //  rotation.z  → roll (rarely needed)
+    //
+    //  scale       → size (ZOOM). Smaller = zoom OUT
+    //                try 0.3–0.5 if too big, 1.5–2 if too small
+    //
+    const INVITATION_CONFIG = {
+      position: { x: 0, y: 0.2, z: 0 },
+      rotation: { x: 60, y: 0, z: 0 },
+      scale:    { x: 0.5, y: 0.5, z: 0.5 },
+    };
+
+    function applyInvitationTransform() {
+      const model = document.getElementById('invitation-model');
+      if (!model) return;
+      const { position: p, rotation: r, scale: s } = INVITATION_CONFIG;
+      model.setAttribute('position', `${p.x} ${p.y} ${p.z}`);
+      model.setAttribute('rotation', `${r.x} ${r.y} ${r.z}`);
+      model.setAttribute('scale', `${s.x} ${s.y} ${s.z}`);
+    }
+
     // Background particles & lanterns (from invitation design)
     const container = document.getElementById('particles');
     for (let i = 0; i < 55; i++) {
@@ -260,8 +286,15 @@
 
     function waitForScene() {
       return new Promise((resolve) => {
-        if (scene.hasLoaded) resolve();
-        else scene.addEventListener('loaded', () => resolve(), { once: true });
+        if (scene.hasLoaded) {
+          applyInvitationTransform();
+          resolve();
+        } else {
+          scene.addEventListener('loaded', () => {
+            applyInvitationTransform();
+            resolve();
+          }, { once: true });
+        }
       });
     }
 
