@@ -57,14 +57,20 @@
 
     AFRAME.registerComponent('invitation-flip', {
       schema: {
-        angle: { type: 'number', default: 18 },
-        duration: { type: 'number', default: 700 },
+        angle: { type: 'number', default: 180 },
+        duration: { type: 'number', default: 800 },
+        frontRotationX: { type: 'number', default: 10 },
+        backRotationX: { type: 'number', default: -10 },
+        rotationY: { type: 'number', default: 0 },
+        rotationZ: { type: 'number', default: 0 },
       },
       init() {
         this.flipped = false;
         this.animating = false;
         this.currentY = 0;
+        this.currentX = this.data.frontRotationX;
         this._raf = null;
+        this.modelEl = this.el.querySelector('#invitation-model');
       },
       toggle() {
         if (this.animating) return;
@@ -76,20 +82,33 @@
         this.animating = false;
         this.flipped = false;
         this.currentY = 0;
+        this.currentX = this.data.frontRotationX;
         this.el.object3D.rotation.y = 0;
+        this.applyModelRotation(this.data.frontRotationX);
+      },
+      applyModelRotation(x) {
+        if (!this.modelEl) return;
+        const { rotationY, rotationZ } = this.data;
+        this.modelEl.setAttribute('rotation', `${x} ${rotationY} ${rotationZ}`);
       },
       animateTo(targetY) {
         this.animating = true;
         const startY = this.currentY;
+        const startX = this.currentX;
+        const targetX = targetY === 0 ? this.data.frontRotationX : this.data.backRotationX;
         const startTime = performance.now();
         const dur = this.data.duration;
         const ease = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
 
         const step = (now) => {
           const t = Math.min(1, (now - startTime) / dur);
-          const y = startY + (targetY - startY) * ease(t);
+          const eased = ease(t);
+          const y = startY + (targetY - startY) * eased;
+          const x = startX + (targetX - startX) * eased;
           this.el.object3D.rotation.y = THREE.MathUtils.degToRad(y);
+          this.applyModelRotation(x);
           this.currentY = y;
+          this.currentX = x;
           if (t < 1) {
             this._raf = requestAnimationFrame(step);
           } else {
@@ -368,6 +387,7 @@
       smoothness: 0.10,
       flipAngle: 180,
       flipDuration: 800,
+      flipBackRotationX: -10,
     };
 
     function applyInvitationTransform() {
@@ -375,7 +395,7 @@
       const anchor = document.getElementById('invitation-anchor');
       const pivot = document.getElementById('invitation-pivot');
       if (!model) return;
-      const { position: p, rotation: r, scale: s, smoothness, flipAngle, flipDuration } = INVITATION_CONFIG;
+      const { position: p, rotation: r, scale: s, smoothness, flipAngle, flipDuration, flipBackRotationX } = INVITATION_CONFIG;
       model.setAttribute('position', `${p.x} ${p.y} ${p.z}`);
       model.setAttribute('rotation', `${r.x} ${r.y} ${r.z}`);
       model.setAttribute('scale', `${s.x} ${s.y} ${s.z}`);
@@ -386,6 +406,10 @@
         pivot.setAttribute('invitation-flip', {
           angle: flipAngle ?? 180,
           duration: flipDuration ?? 800,
+          frontRotationX: r.x,
+          backRotationX: flipBackRotationX ?? -10,
+          rotationY: r.y,
+          rotationZ: r.z,
         });
       }
     }
