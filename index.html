@@ -300,7 +300,7 @@
   </div>
 
   <div class="ar-footer" id="ar-footer">
-    <button class="ar-action-btn" id="flip-btn" type="button" disabled>View Details</button>
+    <button class="ar-action-btn" id="flip-btn" type="button" disabled>View Back</button>
   </div>
 
   <a-scene
@@ -324,7 +324,7 @@
       <a-entity id="invitation-anchor" tracking-smooth="smoothness: 0.12">
 
         <!-- Horizontal flip pivot (Y-axis) -->
-        <a-entity id="invitation-pivot" invitation-flip="angle: 18; duration: 700">
+        <a-entity id="invitation-pivot" invitation-flip="angle: 180; duration: 800">
 
           <a-gltf-model
             id="invitation-model"
@@ -359,15 +359,15 @@
     //  STABILIZATION (if still shaky / too laggy):
     //  smoothness  → 0.08 = very stable, 0.2 = more responsive
     //
-    //  flipAngle   → horizontal Y rotation for "View Details" (use 180 for full back)
+    //  flipAngle   → 180 = full horizontal flip to show card back
     //
     const INVITATION_CONFIG = {
       position: { x: 0, y: 0.5, z: 0 },
       rotation: { x: 10, y: 0, z: -0.5 },
       scale:    { x: 0.5, y: 0.5, z: 0.5 },
       smoothness: 0.12,
-      flipAngle: 18,
-      flipDuration: 700,
+      flipAngle: 180,
+      flipDuration: 800,
     };
 
     function applyInvitationTransform() {
@@ -384,8 +384,8 @@
       }
       if (pivot) {
         pivot.setAttribute('invitation-flip', {
-          angle: flipAngle ?? 18,
-          duration: flipDuration ?? 700,
+          angle: flipAngle ?? 180,
+          duration: flipDuration ?? 800,
         });
       }
     }
@@ -399,7 +399,7 @@
       const flipBtn = document.getElementById('flip-btn');
       const flip = getFlipComponent();
       if (!flipBtn || !flip) return;
-      flipBtn.textContent = flip.flipped ? 'View Front' : 'View Details';
+      flipBtn.textContent = flip.flipped ? 'View Front' : 'View Back';
     }
 
     // Background particles & lanterns (from invitation design)
@@ -556,7 +556,7 @@
 
     scene.addEventListener('targetFound', () => {
       arUi.classList.add('found');
-      scanHint.textContent = 'Invitation revealed — tap View Details to flip';
+      scanHint.textContent = 'Invitation revealed — tap View Back to see details';
       flipBtn.disabled = false;
       const anchor = document.getElementById('invitation-anchor');
       if (anchor?.components['tracking-smooth']) {
