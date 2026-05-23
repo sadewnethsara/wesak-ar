@@ -125,7 +125,34 @@
     }
     .ar-ui.found p { color: #a8d0ff; }
 
-    a-scene { display: none; }
+    /* Scene must stay in layout (not display:none) or Mind AR video never starts */
+    a-scene {
+      position: fixed;
+      inset: 0;
+      z-index: 1;
+    }
+    a-scene.ar-waiting {
+      visibility: hidden;
+      pointer-events: none;
+    }
+    a-scene.ar-active {
+      visibility: visible;
+    }
+
+    #error-screen {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 10000;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+      background: radial-gradient(ellipse at 50% 30%, #0d1a2e 0%, #060c18 50%, #04080f 100%);
+      text-align: center;
+    }
+    #error-screen.visible { display: flex; }
+    #error-screen p { color: #ffb86c; margin: 1rem 0 1.5rem; line-height: 1.6; }
   </style>
 </head>
 <body>
@@ -138,6 +165,12 @@
     <button class="start-btn" id="start-btn" type="button">Allow Camera &amp; Start</button>
   </div>
 
+  <div id="error-screen">
+    <h1 style="font-family:'Cinzel',serif;color:#ff6b6b;font-size:22px;">Camera Error</h1>
+    <p id="error-message">Could not start the camera.</p>
+    <button class="start-btn" type="button" id="retry-btn">Try Again</button>
+  </div>
+
   <div class="ar-ui" id="ar-ui">
     <h2>✦ Wesak Festival 2026 ✦</h2>
     <p id="scan-hint">Scan the marker to view the invitation</p>
@@ -145,6 +178,7 @@
 
   <a-scene
     id="ar-scene"
+    class="ar-waiting"
     mindar-image="imageTargetSrc: ./targets.mind; autoStart: false; uiLoading: no; uiScanning: no; uiError: no;"
     color-space="sRGB"
     renderer="colorManagement: true; physicallyCorrectLights: true; antialias: true"
@@ -216,40 +250,111 @@
 
     const scene = document.getElementById('ar-scene');
     const startBtn = document.getElementById('start-btn');
+    const retryBtn = document.getElementById('retry-btn');
     const arUi = document.getElementById('ar-ui');
     const scanHint = document.getElementById('scan-hint');
+    const permissionScreen = document.getElementById('permission-screen');
+    const errorScreen = document.getElementById('error-screen');
+    const errorMessage = document.getElementById('error-message');
+    let arStarted = false;
 
-    startBtn.addEventListener('click', async () => {
+    function waitForScene() {
+      return new Promise((resolve) => {
+        if (scene.hasLoaded) resolve();
+        else scene.addEventListener('loaded', () => resolve(), { once: true });
+      });
+    }
+
+    function waitNextFrame() {
+      return new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    }
+
+    function showError(err) {
+      permissionScreen.style.display = 'none';
+      errorScreen.classList.add('visible');
+      arUi.style.display = 'none';
+      scene.classList.remove('ar-active');
+      scene.classList.add('ar-waiting');
+
+      let msg = 'Could not start the camera.';
+      if (err?.name === 'NotAllowedError') {
+        msg = 'Camera permission denied. Allow camera in browser settings, then tap Try Again.';
+      } else if (err?.name === 'NotFoundError') {
+        msg = 'No camera found on this device.';
+      } else if (location.protocol !== 'https:' && !['localhost', '127.0.0.1'].includes(location.hostname)) {
+        msg = 'Camera needs HTTPS. Use http://localhost:3000 on PC, or deploy to GitHub Pages for phone.';
+      } else if (err?.message) {
+        msg = err.message;
+      }
+      errorMessage.textContent = msg;
+      startBtn.disabled = false;
+      startBtn.textContent = 'Allow Camera & Start';
+    }
+
+    function resetToPermission() {
+      errorScreen.classList.remove('visible');
+      permissionScreen.style.display = 'flex';
+      arUi.style.display = 'none';
+      scene.classList.remove('ar-active');
+      scene.classList.add('ar-waiting');
+      arStarted = false;
+      startBtn.disabled = false;
+      startBtn.textContent = 'Allow Camera & Start';
+    }
+
+    function getArSystem() {
+      return scene.systems['mindar-image-system'];
+    }
+
+    async function launchAR() {
+      await waitForScene();
+      const arSystem = getArSystem();
+      if (!arSystem) {
+        showError(new Error('Mind AR failed to load. Check your connection and refresh.'));
+        return;
+      }
+
+      permissionScreen.style.display = 'none';
+      errorScreen.classList.remove('visible');
+      scene.classList.remove('ar-waiting');
+      scene.classList.add('ar-active');
+      arUi.style.display = 'block';
+
+      // Let the scene paint before Mind AR opens the camera
+      await waitNextFrame();
+
+      try {
+        await arSystem.start();
+        arStarted = true;
+      } catch (err) {
+        console.error('AR start failed:', err);
+        showError(err);
+      }
+    }
+
+    startBtn.addEventListener('click', () => {
       startBtn.disabled = true;
       startBtn.textContent = 'Starting…';
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: 'environment' }
-        });
-        stream.getTracks().forEach(t => t.stop());
-        launchAR();
-      } catch (err) {
-        console.error(err);
-        startBtn.disabled = false;
-        startBtn.textContent = 'Allow Camera & Start';
-        alert('Camera access is required. Please allow camera and try again.');
-      }
+      // Do NOT call getUserMedia here — Mind AR owns the camera.
+      // A separate stream + stop() often blocks the camera on mobile.
+      launchAR();
     });
 
-    function launchAR() {
-      document.getElementById('permission-screen').style.display = 'none';
-      scene.style.display = 'block';
-      arUi.style.display = 'block';
-      scene.components['mindar-image'].startAR();
+    retryBtn.addEventListener('click', resetToPermission);
 
-      scene.addEventListener('targetFound', () => {
-        arUi.classList.add('found');
-        scanHint.textContent = 'Invitation revealed — Wesak Festival 2026';
-      });
-      scene.addEventListener('targetLost', () => {
-        arUi.classList.remove('found');
-        scanHint.textContent = 'Scan the marker to view the invitation';
-      });
+    scene.addEventListener('targetFound', () => {
+      arUi.classList.add('found');
+      scanHint.textContent = 'Invitation revealed — Wesak Festival 2026';
+    });
+    scene.addEventListener('targetLost', () => {
+      arUi.classList.remove('found');
+      scanHint.textContent = 'Scan the marker to view the invitation';
+    });
+
+    if (location.protocol !== 'https:' && !['localhost', '127.0.0.1'].includes(location.hostname)) {
+      const note = permissionScreen.querySelector('p');
+      note.innerHTML = '⚠️ Use <strong>https://localhost:3000</strong> on PC or GitHub Pages on phone.<br>Camera will not work on http://192.168.x.x';
+      note.style.color = '#ff8844';
     }
   </script>
 </body>
